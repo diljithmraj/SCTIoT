@@ -1,4 +1,4 @@
-# Scecure Communication Through IoT device
+# Scecure Communication Through IoT device (SCTIoT)
 
 # Abstract
 A secure and reliable communication system using two NodeMCU devices to transmit 
