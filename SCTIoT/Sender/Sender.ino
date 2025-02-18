@@ -1,10 +1,10 @@
 // Include necessary libraries             
-#include <WiFi.h>
+#include <WiFi.h> // Allow ESP32 to establish connections with Wi-Fi networks
 #include <iostream>
 #include <vector>
 #include <string>
 using namespace std;
-#include <HTTPClient.h>
+#include <HTTPClient.h> // Allow ESP32 to create a http web
 
 // Define pins
 #define LED_PIN 2 // LED
@@ -15,11 +15,11 @@ using namespace std;
 #define ENTER_B 21 // SEND
 
 // WiFi credentials
-const char* ssid PROGMEM = "FreeWiFi"; //
-const char* password PROGMEM = "00000000"; //
+const char* ssid PROGMEM = "FreeWiFi"; // Enter the SSID
+const char* password PROGMEM = "00000000"; // Enter the Password
 
 String M_code = ""; //To store the message
-int co = 0;
+int co = 0; // To store the message length
 
 // S-box 
 static const uint8_t sbox[256] PROGMEM = {
@@ -191,7 +191,6 @@ vector<uint8_t> hexStringToBytes(const string& hex) {
 
 const char* serverURL = "http://192.168.247.159/receive"; //  Receiver ESP32's IP
 
-
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(DOT_B, INPUT_PULLUP); // Enable internal pull-up resistor
@@ -257,13 +256,10 @@ void loop() {
         message += (char)ciphertext[i];  // Append each byte as a character
     }
     
-    
-
     HTTPClient http;
     http.begin(serverURL);
     http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-
-    
+  
     String postData = "message=" + message;
   int httpResponseCode = http.POST(postData);
 
