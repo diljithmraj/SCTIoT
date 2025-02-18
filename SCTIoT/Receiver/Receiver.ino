@@ -1,15 +1,15 @@
 // Include necessary libraries 
-#include <WiFi.h>
+#include <WiFi.h> // Allow ESP32 to establish connections with Wi-Fi networks
 #include <iostream>
 #include <cstring>
 #include <vector>
 #include <string>
 using namespace std;
-#include <WebServer.h>
+#include <WebServer.h> // Allow ESP32 to create a web server
 
 // WiFi credentials
-const char* ssid = "FreeWiFi"; //
-const char* password = "00000000"; //
+const char* ssid = "FreeWiFi"; // Enter the SSID
+const char* password = "00000000"; // Enter the Password
 
 // Define pins
 #define LED1_PIN 2
@@ -252,7 +252,6 @@ void handleReceive() {
 
     server.send(200, "text/plain", "Message received: ");
     String message = server.arg("message");
-    
     
     // Convert  String to std::string
      stdMessage = message.c_str();  // Now converting correctly
