@@ -1,10 +1,10 @@
 // Include necessary libraries             
-#include <WiFi.h> // Allow ESP32 to establish connections with Wi-Fi networks
+#include <WiFi.h>  // Allow ESP32 to establish connections with Wi-Fi networks
 #include <iostream>
 #include <vector>
 #include <string>
 using namespace std;
-#include <HTTPClient.h> // Allow ESP32 to create a http web
+#include <PubSubClient.h> //Enables ESP32 to connect to an MQTT broker
 
 // Define pins
 #define LED_PIN 2 // LED
@@ -15,11 +15,21 @@ using namespace std;
 #define ENTER_B 21 // SEND
 
 // WiFi credentials
-const char* ssid PROGMEM = "FreeWiFi"; // Enter the SSID
-const char* password PROGMEM = "00000000"; // Enter the Password
+const char* ssid PROGMEM = "FreeWiFi"; // WiFi Name
+const char* password PROGMEM = "00000000"; // WiFi Password
+
+// MQTT Broker
+const char *mqtt_broker PROGMEM = "broker.emqx.io";
+const char *topic PROGMEM = "SCTIoT";
+const char *mqtt_username PROGMEM = "emqx";
+const char *mqtt_password PROGMEM = "public";
+const int mqtt_port PROGMEM = 1883;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 String M_code = ""; //To store the message
-int co = 0; // To store the message length
+int co = 0;
 
 // S-box 
 static const uint8_t sbox[256] PROGMEM = {
@@ -178,18 +188,6 @@ void printHex(const vector<uint8_t>& data) {
     }
     cout << endl;
 }
-// HexString to bytes function 
-vector<uint8_t> hexStringToBytes(const string& hex) {
-    vector<uint8_t> bytes;
-    for (size_t i = 0; i < hex.length(); i += 2) {
-        string byteString = hex.substr(i, 2);
-        uint8_t byte = static_cast<uint8_t>(stoi(byteString, nullptr, 16));
-        bytes.push_back(byte);
-    }
-    return bytes;
-}
-
-const char* serverURL = "http://192.168.247.159/receive"; //  Receiver ESP32's IP
 
 void setup() {
   pinMode(LED_PIN, OUTPUT);
@@ -207,10 +205,30 @@ void setup() {
   }
   Serial.println("\nWi-Fi connected!");
 
+
+   // Connect to MQTT broker
+    client.setServer(mqtt_broker, mqtt_port);
+    while (!client.connected()) {
+        String client_id = "esp32-publisher-";
+        client_id += String(WiFi.macAddress());
+        Serial.printf("Connecting as %s...\n", client_id.c_str());
+        if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
+            Serial.println("Connected to EMQX broker!");
+        } else {
+            Serial.print("Failed, retrying in 2s. State: ");
+            Serial.println(client.state());
+            delay(2000);
+        }
+    }
 }
 
 void loop() {
-  // Check if button is pressed
+  
+  if (!client.connected()) {
+        Serial.println("MQTT disconnected! Reconnecting...");
+        client.connect("esp32-publisher", mqtt_username, mqtt_password);
+    }
+// Check if button is pressed
   if (digitalRead(DOT_B) == LOW) { // Dot Button pressed
     digitalWrite(LED_PIN, HIGH);  // Turn on LED
     delay(200);
@@ -234,7 +252,7 @@ void loop() {
     co = M_code.length();
     co = co - 1;
     M_code.remove(co);  //To remove last letter (basically works as backspace)
-     Serial.println("");
+    Serial.println("");
     Serial.println(M_code);
   }
   else if (digitalRead(ENTER_B) == LOW) {  // Send Button pressed 
@@ -256,20 +274,10 @@ void loop() {
         message += (char)ciphertext[i];  // Append each byte as a character
     }
     
-    HTTPClient http;
-    http.begin(serverURL);
-    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  
-    String postData = "message=" + message;
-  int httpResponseCode = http.POST(postData);
+   // Publish a message
+    client.publish(topic, message.c_str());
+    Serial.println("Message Sent: " + message);
 
-  if (httpResponseCode > 0) {
-    String response = http.getString();
-    Serial.println("Server response: " + response);
-  } else {
-    Serial.println("HTTP POST request failed");
-  }
-  http.end();
     delay(300);
     M_code = "";
 

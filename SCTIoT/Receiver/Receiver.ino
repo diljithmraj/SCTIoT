@@ -1,24 +1,29 @@
 // Include necessary libraries 
-#include <WiFi.h> // Allow ESP32 to establish connections with Wi-Fi networks
+#include <WiFi.h>// Allow ESP32 to establish connections with Wi-Fi networks
 #include <iostream>
 #include <cstring>
 #include <vector>
 #include <string>
 using namespace std;
-#include <WebServer.h> // Allow ESP32 to create a web server
+#include <PubSubClient.h> //Enables ESP32 to connect to an MQTT broker
 
 // WiFi credentials
-const char* ssid = "FreeWiFi"; // Enter the SSID
-const char* password = "00000000"; // Enter the Password
+const char* ssid = "Hotspot";  // WiFi Name
+const char* password = "00001111";  // WiFi Password
 
 // Define pins
 #define LED1_PIN 2
 #define LED2_PIN 5
 
-WebServer server(80); // Start the server on port 80
-void handleRoot() {
-  server.send(200, "text/plain", "ESP32 Server is running");
-}
+// MQTT Broker
+const char *mqtt_broker = "broker.emqx.io";
+const char *topic = "SCTIoT";
+const char *mqtt_username = "emqx";
+const char *mqtt_password = "public";
+const int mqtt_port = 1883;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
 
 // S-box and inverse S-box
 static const uint8_t sbox[256] = {
@@ -147,7 +152,6 @@ void InvMixColumns(uint8_t state[16]) {
     }
 }
 
-
 void AddRoundKey(uint8_t state[16], const uint8_t* roundKey) {
     for (int i = 0; i < 16; i++) {
         state[i] ^= roundKey[i];
@@ -218,7 +222,7 @@ vector<uint8_t> hexStringToBytes(const string& hex) {
 }
 
 std::string stdMessage ="";
-String decrypt(std::string message) {  
+String decrypt(string message) {  
     try {
     uint8_t key[16] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F};
 
@@ -241,19 +245,16 @@ String decrypt(std::string message) {
     }
 }
 
-void handleReceive() {
-    Serial.println("Received a request to /receive");
-    
-    if (!server.hasArg("message")) {
-        Serial.println("Error: No message received");
-        server.send(400, "text/plain", "No message received");
-        return;
+void callback(char *topic, uint8_t *payload, unsigned int length) {
+    Serial.print("Message received in topic: ");
+    Serial.println(topic);
+     String message = ""; 
+    Serial.print("Message: ");
+    for (int i = 0; i < length; i++) {
+        Serial.print((char) payload[i]);
+         message += (char) payload[i]; 
     }
-
-    server.send(200, "text/plain", "Message received: ");
-    String message = server.arg("message");
-    
-    // Convert  String to std::string
+    Serial.println("\n-----------------------");
      stdMessage = message.c_str();  // Now converting correctly
     
     Serial.println(stdMessage.c_str());  // Use c_str() to pass the C-string to Serial.println()
@@ -261,12 +262,13 @@ void handleReceive() {
     // Decrypt the message
     String decryptMessage = decrypt(stdMessage);
     Serial.println(decryptMessage);
+   
      for (int i = 0; i < decryptMessage.length(); i++) {
     char symbol = decryptMessage[i];  // Get the current symbol (dot or dash)
     
     if (symbol == '.') {
       digitalWrite(LED1_PIN, HIGH);  // Turn the LED on
-      delay(500);  // Wait for 1 second
+      delay(500);  // Wait for .5 second
       digitalWrite(LED1_PIN, LOW);  // Turn the LED off
       delay(300);  // Short delay between signals
     }
@@ -298,15 +300,34 @@ void setup() {
     Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 
-  // Set up server routes
-  server.on("/", handleRoot);
-  server.on("/receive", handleReceive);
-  server.begin();
-  Serial.println("Server started");
+  // Connect to MQTT broker
+    client.setServer(mqtt_broker, mqtt_port);
+    client.setCallback(callback);
+    
+    while (!client.connected()) {
+        String client_id = "esp32-subscriber-";
+        client_id += String(WiFi.macAddress());
+        Serial.printf("Connecting as %s...\n", client_id.c_str());
+        if (client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
+            Serial.println("Connected to EMQX broker!");
+            client.subscribe(topic); // Subscribe to topic
+            Serial.println("Subscribed to: " + String(topic));
+        } else {
+            Serial.print("Failed, retrying in 2s. State: ");
+            Serial.println(client.state());
+            delay(2000);
+        }
+    }
 
 }
 
 void loop() {
-  server.handleClient();
+
+     if (!client.connected()) {
+        Serial.println("MQTT disconnected! Reconnecting...");
+        client.connect("esp32-subscriber", mqtt_username, mqtt_password);
+        client.subscribe(topic);
+    }
+    client.loop();
  
   }
