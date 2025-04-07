@@ -181,6 +181,51 @@ void startAPMode() {
     server.begin();
 }
 
+// AES transformations
+
+void AddRoundKey(uint8_t state[16], const uint8_t* roundKey) {
+    for (int i = 0; i < 16; i++) {
+        state[i] ^= roundKey[i];
+    }
+}
+
+void SubBytes(uint8_t state[16]) {
+    for (int i = 0; i < 16; i++) {
+        state[i] = sbox[state[i]];
+    }
+}
+
+void ShiftRows(uint8_t state[16]) {
+    uint8_t temp[16];
+    temp[0]  = state[0];
+    temp[1]  = state[5];
+    temp[2]  = state[10];
+    temp[3]  = state[15];
+    temp[4]  = state[4];
+    temp[5]  = state[9];
+    temp[6]  = state[14];
+    temp[7]  = state[3];
+    temp[8]  = state[8];
+    temp[9]  = state[13];
+    temp[10] = state[2];
+    temp[11] = state[7];
+    temp[12] = state[12];
+    temp[13] = state[1];
+    temp[14] = state[6];
+    temp[15] = state[11];
+    memcpy(state, temp, 16);
+}
+
+void MixColumns(uint8_t state[16]) {
+    for (int i = 0; i < 4; i++) {
+        uint8_t s0 = state[i], s1 = state[i+4], s2 = state[i+8], s3 = state[i+12];
+        state[i]    = gmul(0x02, s0) ^ gmul(0x03, s1) ^ s2 ^ s3;
+        state[i+4]  = s0 ^ gmul(0x02, s1) ^ gmul(0x03, s2) ^ s3;
+        state[i+8]  = s0 ^ s1 ^ gmul(0x02, s2) ^ gmul(0x03, s3);
+        state[i+12] = gmul(0x03, s0) ^ s1 ^ s2 ^ gmul(0x02, s3);
+    }
+}
+
 // S-box 
 static const uint8_t sbox[256] PROGMEM = {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
@@ -251,49 +296,6 @@ void KeyExpansion(const uint8_t* key, uint8_t* expandedKey) {
     }
 }
 
-// AES transformations
-void SubBytes(uint8_t state[16]) {
-    for (int i = 0; i < 16; i++) {
-        state[i] = sbox[state[i]];
-    }
-}
-
-void ShiftRows(uint8_t state[16]) {
-    uint8_t temp[16];
-    temp[0]  = state[0];
-    temp[1]  = state[5];
-    temp[2]  = state[10];
-    temp[3]  = state[15];
-    temp[4]  = state[4];
-    temp[5]  = state[9];
-    temp[6]  = state[14];
-    temp[7]  = state[3];
-    temp[8]  = state[8];
-    temp[9]  = state[13];
-    temp[10] = state[2];
-    temp[11] = state[7];
-    temp[12] = state[12];
-    temp[13] = state[1];
-    temp[14] = state[6];
-    temp[15] = state[11];
-    memcpy(state, temp, 16);
-}
-
-void MixColumns(uint8_t state[16]) {
-    for (int i = 0; i < 4; i++) {
-        uint8_t s0 = state[i], s1 = state[i+4], s2 = state[i+8], s3 = state[i+12];
-        state[i]    = gmul(0x02, s0) ^ gmul(0x03, s1) ^ s2 ^ s3;
-        state[i+4]  = s0 ^ gmul(0x02, s1) ^ gmul(0x03, s2) ^ s3;
-        state[i+8]  = s0 ^ s1 ^ gmul(0x02, s2) ^ gmul(0x03, s3);
-        state[i+12] = gmul(0x03, s0) ^ s1 ^ s2 ^ gmul(0x02, s3);
-    }
-}
-
-void AddRoundKey(uint8_t state[16], const uint8_t* roundKey) {
-    for (int i = 0; i < 16; i++) {
-        state[i] ^= roundKey[i];
-    }
-}
 // AES encryption of a single block
 void AESEncryptBlock(uint8_t* block, const uint8_t* expandedKey) {
     AddRoundKey(block, expandedKey);
@@ -426,7 +428,7 @@ void loop() {
   std::string plaintext = M_code.c_str();
 
   // AES key (should be kept secret and secure)
- uint8_t key[16] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F};
+ uint8_t key[16] = {0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D,0x1E,0x1F};
 
  
     // Encryption call
