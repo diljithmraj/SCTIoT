@@ -1,11 +1,21 @@
 // Include necessary libraries             
 #include <WiFi.h>  // Allow ESP32 to establish connections with Wi-Fi networks
+<<<<<<< HEAD
+=======
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <EEPROM.h>
+>>>>>>> 7259398 (SCTIoT Version 1.0)
 #include <iostream>
 #include <vector>
 #include <string>
+#include <WiFiClientSecure.h>
 using namespace std;
 #include <PubSubClient.h> //Enables ESP32 to connect to an MQTT broker
+<<<<<<< HEAD
 #include <WiFiClientSecure.h>
+=======
+>>>>>>> 7259398 (SCTIoT Version 1.0)
 
 // Define pins
 #define LED_PIN 2 // LED
@@ -15,6 +25,7 @@ using namespace std;
 #define BSPACE_B 19 // SPACE
 #define ENTER_B 21 // SEND
 
+<<<<<<< HEAD
 // WiFi credentials
 const char* ssid PROGMEM = "FreeWiFi"; // WiFi Name
 const char* password PROGMEM = "00000000"; // WiFi Password
@@ -25,6 +36,24 @@ const char *topic = "SCTIoT";
 const char *mqtt_username = "emqx";
 const char *mqtt_password = "public";
 const int mqtt_port = 8883;
+=======
+#define EEPROM_SIZE 512
+#define SSID_ADDR 0       // 0-49 bytes
+#define PASS_ADDR 50      // 50-99 bytes
+#define ADMIN_PASS_ADDR 100  // 100-149 bytes
+#define CLEAR_PASS_ADDR 150  // 150-199 bytes
+
+AsyncWebServer server(80);
+const char* adminUser = "admin";
+String ssid, password, adminPass, clearPass;
+
+// MQTT Broker
+const char *mqtt_broker PROGMEM = "broker.emqx.io";
+const char *topic PROGMEM = "SCTIoT";
+const char *mqtt_username PROGMEM = "emqx";
+const char *mqtt_password PROGMEM = "public";
+const int mqtt_port PROGMEM = 8883;
+>>>>>>> 7259398 (SCTIoT Version 1.0)
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
@@ -54,10 +83,127 @@ YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
 CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 -----END CERTIFICATE-----
 )EOF";
+<<<<<<< HEAD
 
+=======
+>>>>>>> 7259398 (SCTIoT Version 1.0)
 
 String M_code = ""; //To store the message
 int co = 0;
+
+// Function to save Wi-Fi credentials to EEPROM
+void saveCredentials(String ssid, String password) {
+    EEPROM.writeString(0, ssid);
+    EEPROM.writeString(50, password);
+    EEPROM.commit();
+}
+
+// Function to load Wi-Fi credentials from EEPROM
+void saveCredentials() {
+    EEPROM.writeString(SSID_ADDR, ssid);
+    EEPROM.writeString(PASS_ADDR, password);
+    EEPROM.writeString(ADMIN_PASS_ADDR, adminPass);
+    EEPROM.writeString(CLEAR_PASS_ADDR, clearPass);
+    EEPROM.commit();
+}
+
+void loadCredentials() {
+     ssid = EEPROM.readString(SSID_ADDR);
+    password = EEPROM.readString(PASS_ADDR);
+    adminPass = EEPROM.readString(ADMIN_PASS_ADDR);
+    clearPass = EEPROM.readString(CLEAR_PASS_ADDR);
+    
+    // Display loaded credentials
+    Serial.println("\n=== Loaded Credentials ===");
+    Serial.print("SSID: ");
+    Serial.println(ssid.length() > 0 ? ssid : "[not set]");
+    Serial.print("Password: ");
+    Serial.println(password.length() > 0 ? "********" : "[not set]");
+    Serial.print("Admin Password: ");
+    Serial.println(adminPass);
+    Serial.print("Clear Password: ");
+    Serial.println(clearPass);
+    Serial.println("==========================");
+
+    // Set defaults if empty
+    if (adminPass.length() < 8) {
+        adminPass = "esp32admin";
+        Serial.println("Using default admin password");
+    }
+    if (clearPass.length() < 8) {
+        clearPass = "securelog123";
+        Serial.println("Using default clear password");
+    }
+  
+}
+
+void startAPMode() {
+    WiFi.softAP("ESP32-setup", "Config|123");
+    Serial.println("AP Mode Started");
+    Serial.print("AP IP: ");
+    Serial.println(WiFi.softAPIP());
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!request->authenticate(adminUser, adminPass.c_str())) {
+            return request->requestAuthentication();
+        }
+
+        String html = "<html><head><style>"
+                    "body{font-family:Arial,sans-serif;margin:20px}"
+                    "button{padding:10px 20px;margin:10px}"
+                    "</style></head><body>"
+                    "<h2>WiFi Configuration</h2>"
+                    "<p>Current SSID: <strong>" + ssid + "</strong></p>"
+                    "<form action='/save' method='POST'>"
+                    "New SSID: <input type='text' name='ssid' required><br>"
+                    "New Password: <input type='password' name='pass' minlength=8><br>"
+                    "<input type='submit' value='Save & Reboot'>"
+                    "</form>"
+                    "<hr>"
+                    "<form action='/clear' method='POST'>"
+                    "<input type='submit' value='Clear Credentials' style='background:#ff4444;color:white'>"
+                    "</form></body></html>";
+
+        AsyncWebServerResponse *response = request->beginResponse(200, "text/html", html);
+        response->addHeader("Cache-Control", "no-store");
+        request->send(response);
+    });
+
+    server.on("/save", HTTP_POST, [](AsyncWebServerRequest *request) {
+        if (!request->authenticate(adminUser, adminPass.c_str())) {
+            return request->requestAuthentication();
+        }
+
+        String newSSID = request->getParam("ssid", true)->value();
+        String newPass = request->getParam("pass", true)->value();
+
+        if (newSSID.length() > 0 && newSSID.length() <= 32) {
+            ssid = newSSID;
+            password = newPass;
+            saveCredentials();
+            request->send(200, "text/html", "<html><body><h2>Saved!</h2><p>Rebooting...</p></body></html>");
+            delay(1000);
+            ESP.restart();
+        } else {
+            request->send(400, "text/plain", "Invalid SSID (1-32 characters required)");
+        }
+    });
+
+    server.on("/clear", HTTP_POST, [](AsyncWebServerRequest *request) {
+        if (!request->authenticate(adminUser, clearPass.c_str())) {
+            return request->requestAuthentication();
+        }
+
+        EEPROM.writeString(SSID_ADDR, "");
+        EEPROM.writeString(PASS_ADDR, "");
+        EEPROM.commit();
+        request->send(200, "text/html", "<html><body><h2>Credentials Cleared!</h2><p>Rebooting...</p></body></html>");
+        delay(1000);
+        ESP.restart();
+    });
+
+    server.begin();
+}
 
 // S-box 
 static const uint8_t sbox[256] PROGMEM = {
@@ -226,17 +372,36 @@ void setup() {
   pinMode(ENTER_B, INPUT_PULLUP); 
   
   Serial.begin(115200);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWi-Fi connected!");
+  EEPROM.begin(EEPROM_SIZE);
+    loadCredentials();
 
+<<<<<<< HEAD
 
    // Connect to MQTT broker
     espClient.setCACert(ca_cert);
     client.setServer(mqtt_broker, mqtt_port);
+=======
+    WiFi.begin(ssid.c_str(), password.c_str());
+    
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nConnected to WiFi!");
+        Serial.print("IP Address: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nFailed to connect. Starting AP mode...");
+        startAPMode();
+    }
+     espClient.setCACert(ca_cert);
+    // Connect to MQTT broker
+    client.setServer(mqtt_broker, mqtt_port);
+
+>>>>>>> 7259398 (SCTIoT Version 1.0)
     while (!client.connected()) {
         String client_id = "esp32-publisher-";
         client_id += String(WiFi.macAddress());
@@ -246,7 +411,11 @@ void setup() {
         } else {
             Serial.print("Failed, retrying in 2s. State: ");
             Serial.println(client.state());
+<<<<<<< HEAD
             delay(1000);
+=======
+            delay(2000);
+>>>>>>> 7259398 (SCTIoT Version 1.0)
         }
     }
 }
@@ -294,6 +463,7 @@ void loop() {
   // AES key (should be kept secret and secure)
  uint8_t key[16] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F};
 
+ 
     // Encryption call
     vector<uint8_t> ciphertext = AESEncrypt(plaintext, key);
     cout << "Ciphertext (hex): ";
@@ -314,4 +484,5 @@ void loop() {
   else {
     digitalWrite(LED_PIN, LOW);   // Turn off LED
   }
+
 }
