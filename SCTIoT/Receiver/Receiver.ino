@@ -1,33 +1,19 @@
 // Include necessary libraries 
-<<<<<<< HEAD
-#include <WiFi.h>// Allow ESP32 to establish connections with Wi-Fi networks
-=======
 #include <WiFi.h>  // Allow ESP32 to establish connections with Wi-Fi networks
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
->>>>>>> 7259398 (SCTIoT Version 1.0)
 #include <iostream>
 #include <vector>
 #include <string>
 #include <WiFiClientSecure.h>
 using namespace std;
 #include <PubSubClient.h> //Enables ESP32 to connect to an MQTT broker
-<<<<<<< HEAD
-#include <WiFiClientSecure.h>
-
-// WiFi credentials
-const char* ssid = "Hotspot";  // WiFi Name
-const char* password = "00001111";  // WiFi Password
-=======
->>>>>>> 7259398 (SCTIoT Version 1.0)
 
 // Define pins
 #define LED1_PIN 2
 #define LED2_PIN 5
 
-<<<<<<< HEAD
-=======
 #define EEPROM_SIZE 512
 #define SSID_ADDR 0       // 0-49 bytes
 #define PASS_ADDR 50      // 50-99 bytes
@@ -38,7 +24,6 @@ AsyncWebServer server(80);
 const char* adminUser = "admin";
 String ssid, password, adminPass, clearPass;
 
->>>>>>> 7259398 (SCTIoT Version 1.0)
 // MQTT Broker
 const char *mqtt_broker = "broker.emqx.io";
 const char *topic = "SCTIoT";
@@ -74,8 +59,6 @@ YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
 CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 -----END CERTIFICATE-----
 )EOF";
-<<<<<<< HEAD
-=======
 
 // Function to save Wi-Fi credentials to EEPROM
 void saveCredentials(String ssid, String password) {
@@ -192,7 +175,6 @@ void startAPMode() {
 
     server.begin();
 }
->>>>>>> 7259398 (SCTIoT Version 1.0)
 
 // S-box and inverse S-box
 static const uint8_t sbox[256] = {
@@ -321,6 +303,7 @@ void InvMixColumns(uint8_t state[16]) {
     }
 }
 
+
 void AddRoundKey(uint8_t state[16], const uint8_t* roundKey) {
     for (int i = 0; i < 16; i++) {
         state[i] ^= roundKey[i];
@@ -413,10 +396,6 @@ String decrypt(string message) {
         std::cout << "Caught an exception: " << e.what() << std::endl;
     }
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> 7259398 (SCTIoT Version 1.0)
 void callback(char *topic, uint8_t *payload, unsigned int length) {
     Serial.print("Message received in topic: ");
     Serial.println(topic);
@@ -473,10 +452,6 @@ void setup() {
         Serial.print(".");
     }
 
-<<<<<<< HEAD
-  // Connect to MQTT broker
-    espClient.setCACert(ca_cert);
-=======
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\nConnected to WiFi!");
         Serial.print("IP Address: ");
@@ -487,7 +462,6 @@ void setup() {
     }
     espClient.setCACert(ca_cert);
     // Connect to MQTT broker
->>>>>>> 7259398 (SCTIoT Version 1.0)
     client.setServer(mqtt_broker, mqtt_port);
     client.setKeepAlive(60);
     client.setCallback(callback);
@@ -513,10 +487,7 @@ void loop() {
 
      if (!client.connected()) {
         Serial.println("MQTT disconnected! Reconnecting...");
-<<<<<<< HEAD
-=======
         delay(1000);
->>>>>>> 7259398 (SCTIoT Version 1.0)
         client.connect("esp32-subscriber", mqtt_username, mqtt_password);
         client.subscribe(topic);
     }

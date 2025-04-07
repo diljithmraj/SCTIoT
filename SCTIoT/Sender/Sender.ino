@@ -1,21 +1,14 @@
 // Include necessary libraries             
 #include <WiFi.h>  // Allow ESP32 to establish connections with Wi-Fi networks
-<<<<<<< HEAD
-=======
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
->>>>>>> 7259398 (SCTIoT Version 1.0)
 #include <iostream>
 #include <vector>
 #include <string>
 #include <WiFiClientSecure.h>
 using namespace std;
 #include <PubSubClient.h> //Enables ESP32 to connect to an MQTT broker
-<<<<<<< HEAD
-#include <WiFiClientSecure.h>
-=======
->>>>>>> 7259398 (SCTIoT Version 1.0)
 
 // Define pins
 #define LED_PIN 2 // LED
@@ -25,18 +18,6 @@ using namespace std;
 #define BSPACE_B 19 // SPACE
 #define ENTER_B 21 // SEND
 
-<<<<<<< HEAD
-// WiFi credentials
-const char* ssid PROGMEM = "FreeWiFi"; // WiFi Name
-const char* password PROGMEM = "00000000"; // WiFi Password
-
-// MQTT Broker
-const char *mqtt_broker = "broker.emqx.io";
-const char *topic = "SCTIoT";
-const char *mqtt_username = "emqx";
-const char *mqtt_password = "public";
-const int mqtt_port = 8883;
-=======
 #define EEPROM_SIZE 512
 #define SSID_ADDR 0       // 0-49 bytes
 #define PASS_ADDR 50      // 50-99 bytes
@@ -53,7 +34,6 @@ const char *topic PROGMEM = "SCTIoT";
 const char *mqtt_username PROGMEM = "emqx";
 const char *mqtt_password PROGMEM = "public";
 const int mqtt_port PROGMEM = 8883;
->>>>>>> 7259398 (SCTIoT Version 1.0)
 
 WiFiClientSecure espClient;
 PubSubClient client(espClient);
@@ -83,10 +63,6 @@ YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk
 CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 -----END CERTIFICATE-----
 )EOF";
-<<<<<<< HEAD
-
-=======
->>>>>>> 7259398 (SCTIoT Version 1.0)
 
 String M_code = ""; //To store the message
 int co = 0;
@@ -375,12 +351,6 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
     loadCredentials();
 
-<<<<<<< HEAD
-
-   // Connect to MQTT broker
-    espClient.setCACert(ca_cert);
-    client.setServer(mqtt_broker, mqtt_port);
-=======
     WiFi.begin(ssid.c_str(), password.c_str());
     
     unsigned long start = millis();
@@ -401,7 +371,6 @@ void setup() {
     // Connect to MQTT broker
     client.setServer(mqtt_broker, mqtt_port);
 
->>>>>>> 7259398 (SCTIoT Version 1.0)
     while (!client.connected()) {
         String client_id = "esp32-publisher-";
         client_id += String(WiFi.macAddress());
@@ -411,11 +380,7 @@ void setup() {
         } else {
             Serial.print("Failed, retrying in 2s. State: ");
             Serial.println(client.state());
-<<<<<<< HEAD
-            delay(1000);
-=======
             delay(2000);
->>>>>>> 7259398 (SCTIoT Version 1.0)
         }
     }
 }
